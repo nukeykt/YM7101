@@ -83,35 +83,61 @@ int vc_inc;
 int vreset_latch;
 int vunk_latch;
 
+int oddeven;
+
 int databus;
+
+int hv_unklatch2;
+int hv_unklatch3;
+int hv_unklatch4;
+int hv_unklatch5;
+int hv_unktrig1;
 
 void VDP_DoHVCounters(void)
 {
     int reset = pin_ic | testf_write_signal;
 
+    int unkbit3 = (vunk_latch == 1) && reg_80[0];
 
-    int vreset = test2_write_signal | reset | (vc_inc && vreset_latch) | vunk_latch;
+    int vreset = test2_write_signal | reset | (vc_inc && vreset_latch) | unkbit3;
     int vinc = reg_test1[2] ? m68kbg_pin : (vc_inc && !vreset);
 
     int unk1 = hv_unklatch1 == 1 && reg_80[0];
     int hreset = test3_write_signal | reset | hreset_latch | unk1;
 
-    int unkbit1 = ((hsync_in && reg_8c[5]) || csync_in || (hv_unklatch1 & 1) != 0) && !(hunk_latch || reset);
+    int unkbit1 = ((hsync_in && reg_8c[5]) || csync_in || (hv_unklatch1 & 1) != 0) && !((hunk_latch & 1) != 0 || reset);
     hv_unklatch1 <<= 1;
     hv_unklatch1 |= unkbit1;
     hv_unklatch1 &= 3;
 
+    hv_unktrig1 |= unkbit3 && (hv_unklatch5 & 2) != 0;
+    if ((unkbit3 && (hunk_latch & 2) != 0) || reset)
+        hv_unktrig1 = 0;
 
+    int unkbit5 = ((hv_unklatch5 & 1) != 0 || (hunk_latch & 1) != 0) && csync_in;
+    int unkbit4 = (vunk_latch & 1) != 0 || unkbit5;
+
+
+    int unkbit2 = hv_unklatch3 && hv_unklatch2;
+    int oeinc = unkbit2 && !reg_80[0];
+    int oereset = reset || !LSM0 || (!hv_unktrig1 && unkbit2 && reg_80[0]);
+    int oeone = hv_unklatch4;
+
+    hv_unklatch4 = (unkbit2 && reg_80[0] && hv_unktrig1);
 
     hsync_in = hsync_pin | hsync; // FIXME
     csync_in = csync_pin | csync; // FIXME
 
     hreset_latch = hcounter == (H40 ? 363 : 294);
-    hunk_latch = hcounter == (H40 ? 253 : 206);
+    hunk_latch <<= 1;
+    hunk_latch |= hcounter == (H40 ? 253 : 206);
+    hv_unklatch2 = hcounter == 0;
+    hv_unklatch5 <<= 1;
+    hv_unklatch5 |= hcounter == (H40 ? 43 : 36);
 
     vc_inc = hcounter == (M5 ? (H40 ? 328 : 264) : 488);
     vreset_latch = 0;
-    int oddeven = 0; // TODO
+
     if (!pal)
     {
         if (!M5)
@@ -155,6 +181,20 @@ void VDP_DoHVCounters(void)
             }
         }
     }
+    if (!M5)
+    {
+        hv_unklatch3 = vcounter == 192;
+    }
+    else if (!M2)
+    {
+        hv_unklatch3 = vcounter == 224;
+    }
+    else
+    {
+        hv_unklatch3 = vcounter == 240;
+    }
+
+
 
     if (vreset)
     {
@@ -268,6 +308,12 @@ void VDP_DoHVCounters(void)
         hcounter++;
     }
     hcounter &= 511;
+
+    if (oeone)
+        oddeven = 1;
+    oddeven = (oddeven + oeinc) & 1;
+    if (oereset)
+        oddeven = 0;
 }
 
 void VDP_ClockDotSub(void)
@@ -421,5 +467,6 @@ int main()
         VDP_Clock();
         printf("Clock: %i m68: %i z80: %i dclk %i car %i\n", i, m68kclock, z80clock, dclk, subcar);
     }
+
     return 0;
 }
