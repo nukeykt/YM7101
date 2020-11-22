@@ -68,6 +68,7 @@ int hunk_latch;
 #define LSM0 reg_8c[1]
 #define LSM1 reg_8c[2]
 #define LCB reg_80[5]
+#define DISP reg_81[6]
 
 int hv_unklatch1;
 
@@ -79,6 +80,7 @@ int hsync;
 int csync;
 
 int m68kbg_pin;
+int m68kintak_pin;
 
 int vc_inc;
 int vreset_latch;
@@ -124,6 +126,9 @@ int hv_unktrig4;
 int hv_unktrig5;
 int hv_unktrig6;
 
+int hv_unklatch31;
+int hv_unklatch32;
+
 int vsync;
 
 void VDP_DoHVCounters(void)
@@ -137,6 +142,10 @@ void VDP_DoHVCounters(void)
 
     int unk1 = hv_unklatch1 == 1 && reg_80[0];
     int hreset = test3_write_signal | reset | hreset_latch | unk1;
+    int hinc = reg_test1[3] ? m68kintak_pin : !hreset;
+
+    int unkbit12 = hreset && reg_80[0];
+    int unkbit13 = hv_unklatch31 || unkbit12;
 
     int unkbit1 = ((hsync_in && reg_8c[5]) || csync_in || (hv_unklatch1 & 1) != 0) && !((hunk_latch & 1) != 0 || reset);
     hv_unklatch1 <<= 1;
@@ -170,6 +179,126 @@ void VDP_DoHVCounters(void)
     hv_unktrig6 |= hv_unklatch10 && unkbit6;
     if ((hv_unklatch11 && unkbit6) || reset)
         hv_unktrig6 = 0;
+
+
+
+    int vactive = (hv_unklatch12 || hv_unktrig2) && DISP;
+
+    int unkbit10 = reg_80[0] && !reg_8c[4];
+    int unkbit11 = unkbit10 && !reg_81[0];
+
+    int s1 = 0;
+    if (vactive && M5 && ((hcounter & 319) == 50) || (H40 && hcounter == 306))
+        s1 = 1;
+    if (!vactive && (hcounter & 63) == 50)
+        s1 = 1;
+    int s2 = 0;
+
+    if (vactive && ((hcounter & 271) == 0 || (H40 && M5 && (hcounter & 463) == 256) || (!M5 && (hcounter & 271) == 8) || (M5 && hcounter== 496)))
+        s2 = 1;
+
+    int s3 = 0;
+    if (vactive && ((hcounter & 271) == 8 || (H40 && M5 && (hcounter & 463) == 264) || (M5 && hcounter == 504)))
+        s3 = 1;
+
+    int s4 = 0;
+    if (vactive && ((hcounter & 263) == 4 || (H40 && M5 && (hcounter & 455) == 260) || (M5 && hcounter == 500) || (M5 && hcounter == 508)))
+        s4 = 1;
+
+    int s5 = 0;
+    if (vactive && ((hcounter & 263) == 6 || (H40 && M5 && (hcounter & 455) == 262) || (M5 && hcounter == 502) || (M5 && hcounter == 510)))
+        s5 = 1;
+
+    int s6 = 0;
+    if (vactive && ((M5 && (hcounter & 271) == 10) || (M5 && H40 && (hcounter & 463) == 458)
+        || (!M5 && ((hcounter & 509) == 264 || (hcounter & 509) == 276 || (hcounter & 509) == 468 || (hcounter & 509) == 480))))
+        s6 = 1;
+
+    int s7 = 0;
+    if (vactive && ((M5 && H40 && hcounter == 484) || (M5 && H40 && hcounter == 460) || (M5 && H40 && hcounter == 458)
+        || (M5 && H40 && !unkbit11 && (hcounter & 505) == 344)
+        || (M5 && H40 && !unkbit10 && hcounter == 364)
+        || (M5 && H40 && !unkbit10 && (hcounter & 509) == 360)
+        || (M5 && H40 && !unkbit10 && (hcounter & 505) == 352)
+        || (M5 && H40 && (hcounter & 505) == 336)
+        || (M5 && H40 && (hcounter & 505) == 328)
+        || (M5 && H40 && (hcounter & 509) == 324)
+        || (M5 && !H40 && !unkbit10 && hcounter == 290)
+        || (M5 && !H40 && !unkbit10 && (hcounter & 509) == 292)
+        || (M5 && !H40 && !unkbit11 && (hcounter & 505) == 280)
+        || (M5 && !H40 && (hcounter & 505) == 264)
+        || (M5 && !H40 && (hcounter & 509) == 260)
+        || (M5 && !H40 && (hcounter & 505) == 272)
+        || (M5 && hcounter == 486)
+        || (M5 && (hcounter & 503) == 498)
+        || (M5 && (hcounter & 505) == 488)
+        || (M5 && (hcounter & 509) == 480)
+        || (M5 && (hcounter & 497) == 464)
+        // || (!M5 && (hcounter & 509) == 488)
+        // || (!M5 && (hcounter & 509) == 476)
+        // || (!M5 && (hcounter & 509) == 284)
+        || (!M5 && (hcounter & 509) == 484)
+        || (!M5 && (hcounter & 509) == 472)
+        || (!M5 && (hcounter & 509) == 280)
+        || (!M5 && (hcounter & 509) == 268)))
+        s7 = 1;
+
+    int s8 = (hcounter & 1) == 1;
+    int s9 = 0;
+    if (vactive && !M5 && (hcounter == 488 || hcounter == 484 || (hcounter & 507) == 472 || (hcounter & 503) == 272 || (hcounter & 495) == 268))
+        s9 = 1;
+
+    int s10 = 0;
+    if (vactive && !M5 && ((hcounter & 509) == 480 || (hcounter & 509) == 468 || (hcounter & 509) == 276 || (hcounter & 509) == 264))
+        s10 = 1;
+
+    int s11 = 0;
+
+    if (unkbit13)
+        s11 = 1;
+
+    if (vactive && !M5 && ((hcounter & 279) == 18 || (hcounter & 287) == 10 || (hcounter & 497) == 496))
+        s11 = 1;
+
+    int s12 = 0;
+    if (vactive && ((M5 && H40 && hcounter == 484) || (M5 && H40 && hcounter == 460) || (M5 && H40 && hcounter == 458)
+        || (M5 && H40 && !unkbit11 && (hcounter & 505) == 344)
+        || (M5 && H40 && !unkbit10 && hcounter == 364)
+        || (M5 && H40 && !unkbit10 && (hcounter & 509) == 360)
+        || (M5 && H40 && !unkbit10 && (hcounter & 505) == 352)
+        || (M5 && H40 && (hcounter & 505) == 336)
+        || (M5 && !H40 && !unkbit10 && hcounter == 290)
+        || (M5 && !H40 && !unkbit10 && (hcounter & 509) == 292)
+        || (M5 && !H40 && !unkbit11 && (hcounter & 505) == 280)
+        || (M5 && !H40 && (hcounter & 505) == 272)
+        || (M5 && hcounter == 486)
+        || (M5 && (hcounter & 503) == 498)
+        || (M5 && (hcounter & 505) == 488)
+        || (M5 && (hcounter & 509) == 480)
+        || (M5 && (hcounter & 497) == 464)
+        || (!M5 && (hcounter & 279) == 18)
+        || (!M5 && (hcounter & 287) == 10)
+        || (!M5 && (hcounter & 497) == 496)
+        || (M5 && hcounter == 496)
+        || (M5 && hcounter == 504)
+        || (M5 && hcounter == 500)
+        || (M5 && hcounter == 508)
+        || (M5 && hcounter == 502)))
+        s12 = 1;
+    
+    int s13 = 0;
+    if (vactive && M5 && hcounter == 486)
+        s13 = 1;
+
+    int s14 = 0;
+    if (vactive && ((!M5 && (hcounter & 509) == 488)
+        || (!M5 && (hcounter & 509) == 476)
+        || (!M5 && (hcounter & 509) == 284)
+        || (!M5 && (hcounter & 509) == 272)))
+        s14 = 1;
+
+    hv_unklatch31 = unkbit12;
+    hv_unklatch32 = unkbit13;
 
 
     int unkbit5 = ((hv_unklatch5 & 1) != 0 || (hunk_latch & 1) != 0) && csync_in;
@@ -647,7 +776,7 @@ void VDP_DoHVCounters(void)
             hcounter = databus & 511;
         }
     }
-    else
+    else if (hinc)
     {
         hcounter++;
     }
