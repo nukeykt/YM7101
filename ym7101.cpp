@@ -67,6 +67,7 @@ int hunk_latch;
 #define H40 reg_8c[0]
 #define LSM0 reg_8c[1]
 #define LSM1 reg_8c[2]
+#define LCB reg_80[5]
 
 int hv_unklatch1;
 
@@ -91,7 +92,39 @@ int hv_unklatch2;
 int hv_unklatch3;
 int hv_unklatch4;
 int hv_unklatch5;
+int hv_unklatch6;
+int hv_unklatch7;
+int hv_unklatch8;
+int hv_unklatch9;
+int hv_unklatch10;
+int hv_unklatch11;
+int hv_unklatch12;
+int hv_unklatch13;
+int hv_unklatch14;
+int hv_unklatch15;
+int hv_unklatch16;
+int hv_unklatch17;
+int hv_unklatch18;
+int hv_unklatch19;
+int hv_unklatch20;
+int hv_unklatch21;
+int hv_unklatch22;
+int hv_unklatch23;
+int hv_unklatch24;
+int hv_unklatch25;
+int hv_unklatch26;
+int hv_unklatch27;
+int hv_unklatch28;
+int hv_unklatch29;
+int hv_unklatch30;
 int hv_unktrig1;
+int hv_unktrig2;
+int hv_unktrig3;
+int hv_unktrig4;
+int hv_unktrig5;
+int hv_unktrig6;
+
+int vsync;
 
 void VDP_DoHVCounters(void)
 {
@@ -114,8 +147,37 @@ void VDP_DoHVCounters(void)
     if ((unkbit3 && (hunk_latch & 2) != 0) || reset)
         hv_unktrig1 = 0;
 
+    hv_unktrig2 |= hv_unklatch7;
+    if (hv_unklatch3 || reset)
+        hv_unktrig2 = 0;
+
+    int unkbit6 = hv_unklatch13 || !oddeven;
+    int unkbit7 = unkbit6 && hv_unklatch6;
+
+    hv_unktrig3 |= unkbit7 || reset;
+    if (hv_unklatch8)
+        hv_unktrig3 = 0;
+    int unkbit9 = unkbit6 && hv_unklatch9;
+
+    hv_unktrig4 |= unkbit7;
+    if (unkbit9 || reset)
+        hv_unktrig4 = 0;
+
+    hv_unktrig5 |= unkbit9 || reset;
+    if (hv_unklatch10 && unkbit6)
+        hv_unktrig5 = 0;
+
+    hv_unktrig6 |= hv_unklatch10 && unkbit6;
+    if ((hv_unklatch11 && unkbit6) || reset)
+        hv_unktrig6 = 0;
+
+
     int unkbit5 = ((hv_unklatch5 & 1) != 0 || (hunk_latch & 1) != 0) && csync_in;
-    int unkbit4 = (vunk_latch & 1) != 0 || unkbit5;
+    int unkbit4 = ((vunk_latch & 1) != 0 || unkbit5) && (!hv_unklatch8 && !reset);
+
+    vunk_latch <<= 1;
+    vunk_latch |= unkbit4;
+    vunk_latch &= 3;
 
 
     int unkbit2 = hv_unklatch3 && hv_unklatch2;
@@ -137,6 +199,44 @@ void VDP_DoHVCounters(void)
 
     vc_inc = hcounter == (M5 ? (H40 ? 328 : 264) : 488);
     vreset_latch = 0;
+    hv_unklatch8 = 0;
+    hv_unklatch6 = 0;
+
+    hv_unklatch13 = hcounter == (H40 ? 120 : 95);
+    hv_unklatch14 = hcounter == 18;
+    if (!LCB && hcounter == 10)
+        hv_unklatch14 = 1;
+
+    hv_unklatch15 = hcounter == (H40 ? 330 : 266);
+    hv_unklatch16 = hcounter == (H40 ? 348 : 284);
+    hv_unklatch17 = hcounter == (H40 ? 1 : 0);
+    hv_unklatch18 = hcounter == (H40 ? 120 : 95);
+    hv_unklatch19 = hcounter == (H40 ? 148 : 121);
+    if (H40)
+    {
+        hv_unklatch20 = hcounter == 164 || hcounter == 466;
+    }
+    else
+    {
+        hv_unklatch20 = hcounter == 134 || hcounter == 475;
+    }
+    hv_unklatch21 = hcounter == (H40 ? 358 : 292);
+    hv_unklatch22 = hcounter == (H40 ? 482 : 488);
+    hv_unklatch23 = hcounter == (H40 ? 322 : 258);
+    hv_unklatch24 = (hcounter & 7) == 0;
+    hv_unklatch25 = (hcounter & 15) == 7;
+    if (!M5 && (hcounter & 15) == 15)
+        hv_unklatch25 |= 1;
+
+    hv_unklatch26 = (hcounter & 15) == 15;
+    hv_unklatch27 = 0;
+    if (!M5 && (hcounter == 267 || hcounter == 279 || hcounter == 471 || hcounter == 483))
+        hv_unklatch27 = 1;
+    hv_unklatch28 = 0;
+    if (M5 && (((hcounter & 271) == 13) || (H40 && ((hcounter & 463) == 269))))
+        hv_unklatch28 = 1;
+    hv_unklatch29 = (hcounter == 507);
+    hv_unklatch30 = ((hcounter & 239) == 227);
 
     if (!pal)
     {
@@ -194,7 +294,251 @@ void VDP_DoHVCounters(void)
         hv_unklatch3 = vcounter == 240;
     }
 
-
+    if (!pal)
+    {
+        if (!M5)
+        {
+            hv_unklatch6 = vcounter == 216;
+        }
+        else if (!M2)
+        {
+            hv_unklatch6 = vcounter == 232;
+        }
+    }
+    else
+    {
+        if (!LSM0)
+        {
+            if (!M5)
+            {
+                hv_unklatch6 = vcounter == 240;
+            }
+            else
+            {
+                if (!M2)
+                {
+                    hv_unklatch6 = vcounter == 256;
+                }
+                else
+                {
+                    hv_unklatch6 = vcounter == 264;
+                }
+            }
+        }
+        else
+        {
+            if (!M2)
+            {
+                hv_unklatch6 = vcounter == 255;
+            }
+            else
+            {
+                hv_unklatch6 = vcounter == 263;
+            }
+        }
+    }
+    hv_unklatch7 = vcounter == 0;
+    if (!pal)
+    {
+        if (!M5)
+        {
+            hv_unklatch8 = vcounter == 485;
+        }
+        else if (!M2)
+        {
+            hv_unklatch8 = vcounter == 501;
+        }
+    }
+    else
+    {
+        if (!M5)
+        {
+            hv_unklatch8 = vcounter == 458;
+        }
+        else
+        {
+            if (!M2)
+            {
+                hv_unklatch8 = vcounter == 474;
+            }
+            else
+            {
+                hv_unklatch8 = vcounter == 482;
+            }
+        }
+    }
+    hv_unklatch9 = 0;
+    if (!oddeven)
+    {
+        if (!pal)
+        {
+            if (!M5)
+            {
+                hv_unklatch9 = vcounter == 469;
+            }
+            else if (!M2)
+            {
+                hv_unklatch9 = vcounter == 485;
+            }
+        }
+        else
+        {
+            if (!M5)
+            {
+                hv_unklatch9 = vcounter == 442;
+            }
+            else
+            {
+                if (!M2)
+                {
+                    hv_unklatch9 = vcounter == 458;
+                }
+                else
+                {
+                    hv_unklatch9 = vcounter == 466;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (!pal)
+        {
+            if (M5 && !M2)
+            {
+                hv_unklatch9 = vcounter == 484;
+            }
+        }
+        else
+        {
+            if (M5)
+            {
+                if (!M2)
+                {
+                    hv_unklatch9 = vcounter == 457;
+                }
+                else
+                {
+                    hv_unklatch9 = vcounter == 465;
+                }
+            }
+        }
+    }
+    hv_unklatch10 = 0;
+    if (!oddeven)
+    {
+        if (!pal)
+        {
+            if (!M5)
+            {
+                hv_unklatch10 = vcounter == 472;
+            }
+            else if (!M2)
+            {
+                hv_unklatch10 = vcounter == 488;
+            }
+        }
+        else
+        {
+            if (!M5)
+            {
+                hv_unklatch10 = vcounter == 445;
+            }
+            else
+            {
+                if (!M2)
+                {
+                    hv_unklatch10 = vcounter == 461;
+                }
+                else
+                {
+                    hv_unklatch10 = vcounter == 469;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (!pal)
+        {
+            if (M5 && !M2)
+            {
+                hv_unklatch10 = vcounter == 487;
+            }
+        }
+        else
+        {
+            if (M5)
+            {
+                if (!M2)
+                {
+                    hv_unklatch10 = vcounter == 460;
+                }
+                else
+                {
+                    hv_unklatch10 = vcounter == 468;
+                }
+            }
+        }
+    }
+    hv_unklatch11 = 0;
+    if (!oddeven)
+    {
+        if (!pal)
+        {
+            if (!M5)
+            {
+                hv_unklatch11 = vcounter == 475;
+            }
+            else if (!M2)
+            {
+                hv_unklatch11 = vcounter == 491;
+            }
+        }
+        else
+        {
+            if (!M5)
+            {
+                hv_unklatch11 = vcounter == 448;
+            }
+            else
+            {
+                if (!M2)
+                {
+                    hv_unklatch11 = vcounter == 464;
+                }
+                else
+                {
+                    hv_unklatch11 = vcounter == 472;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (!pal)
+        {
+            if (M5 && !M2)
+            {
+                hv_unklatch11 = vcounter == 490;
+            }
+        }
+        else
+        {
+            if (M5)
+            {
+                if (!M2)
+                {
+                    hv_unklatch11 = vcounter == 463;
+                }
+                else
+                {
+                    hv_unklatch11 = vcounter == 471;
+                }
+            }
+        }
+    }
+    hv_unklatch12 = vcounter == 511;
 
     if (vreset)
     {
@@ -314,6 +658,8 @@ void VDP_DoHVCounters(void)
     oddeven = (oddeven + oeinc) & 1;
     if (oereset)
         oddeven = 0;
+
+    vsync = hv_unktrig5;
 }
 
 void VDP_ClockDotSub(void)
@@ -413,9 +759,6 @@ void VDP_Clock(void)
         dclk4_state[1] = 0;
         dclk4_state[2] = 0;
         dclk4_state[3] = 0;
-        dclk2_state[0] = 0;
-        dclk2_state[1] = 0;
-        dclk2_state[2] = 0;
         dclk5_state[0] = 0;
         dclk5_state[1] = 0;
         dclk5_state[2] = 0;
