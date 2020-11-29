@@ -128,6 +128,7 @@ int hv_unktrig6;
 
 int hv_unklatch31;
 int hv_unklatch32;
+int hv_unklatch33;
 
 int vsync;
 
@@ -229,7 +230,7 @@ void VDP_DoHVCounters(void)
         || (M5 && !H40 && (hcounter & 505) == 264)
         || (M5 && !H40 && (hcounter & 509) == 260)
         || (M5 && !H40 && (hcounter & 505) == 272)
-        || (M5 && hcounter == 486)
+        // || (M5 && hcounter == 486)
         || (M5 && (hcounter & 503) == 498)
         || (M5 && (hcounter & 505) == 488)
         || (M5 && (hcounter & 509) == 480)
@@ -296,6 +297,8 @@ void VDP_DoHVCounters(void)
         || (!M5 && (hcounter & 509) == 284)
         || (!M5 && (hcounter & 509) == 272)))
         s14 = 1;
+
+    hv_unklatch33 = !(!hv_unklatch32 && s8);
 
     hv_unklatch31 = unkbit12;
     hv_unklatch32 = unkbit13;
